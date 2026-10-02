@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Orders - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Orders</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <form id="date-range" class="card">
+            <div class="card-body">
+                <h5 class="card-title">Filter by Date</h5>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label for="start-date" class="form-label">From</label>
+                        <input type="date" class="form-control" id="start-date">
+                    </div>
+                    <div class="col-6">
+                        <label for="end-date" class="form-label">To</label>
+                        <input type="date" class="form-control" id="end-date">
+                    </div>
+                </div>
+                <div class="d-grid mt-3">
+                    <button type="submit" class="btn btn-primary">Apply Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Filter by Type</h5>
+                <div class="btn-group w-100">
+                    <button type="button" class="btn btn-outline-primary order-type-filter active" data-type="ALL">All Orders</button>
+                    <button type="button" class="btn btn-outline-success order-type-filter" data-type="BUY">Buy Orders</button>
+                    <button type="button" class="btn btn-outline-danger order-type-filter" data-type="SELL">Sell Orders</button>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="order-search" placeholder="Search orders...">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Order History</h5>
+    </div>
+    <div class="card-body p-0">
+        <div id="alerts-container"></div>
+        
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover orders-table" id="orders-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Symbol</th>
+                        <th>Type</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr data-date="{{ order.created_at }}" data-type="{{ order.order_type }}">
+                        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="order-symbol">
+                            <a href="{{ url_for('chart', symbol=order.symbol) }}">{{ order.symbol }}</a>
+                        </td>
+                        <td class="order-type {% if order.order_type == 'BUY' %}text-success{% else %}text-danger{% endif %}">
+                            {{ order.order_type }}
+                        </td>
+                        <td class="text-end">{{ order.quantity }}</td>
+                        <td class="text-end">${{ order.price|round(2) }}</td>
+                        <td class="text-end">${{ (order.price * order.quantity)|round(2) }}</td>
+                        <td class="order-status">
+                            <span class="badge status-{{ order.status.lower() }}">{{ order.status }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center p-5">
+            <p class="text-muted mb-3">You haven't placed any orders yet.</p>
+            <a href="{{ url_for('watchlist') }}" class="btn btn-primary">
+                <i class="fas fa-shopping-cart me-2"></i> Place Your First Order
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/orders.js') }}"></script>
+{% endblock %}

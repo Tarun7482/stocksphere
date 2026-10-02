@@ -1,0 +1,236 @@
+/* Custom CSS for StockSphere trading platform */
+
+/* Theme variables for light/dark mode */
+:root {
+    /* Light mode is handled by Bootstrap defaults */
+}
+
+[data-bs-theme="dark"] {
+    /* Dark mode colors for custom components */
+    --custom-card-bg: #2c2c2c;
+    --custom-text-color: #f0f0f0;
+    --custom-border-color: #444;
+}
+
+/* Dark mode-specific overrides */
+[data-bs-theme="dark"] .order-section {
+    background-color: var(--custom-card-bg);
+    color: var(--custom-text-color);
+}
+
+[data-bs-theme="dark"] .company-name {
+    color: #aaa;
+}
+
+[data-bs-theme="dark"] footer {
+    background-color: var(--bs-dark) !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--custom-card-bg) !important;
+    color: var(--custom-text-color) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--custom-text-color) !important;
+}
+
+/* General Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
+
+.card {
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 700;
+    color: #fff;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Dashboard Widgets */
+.market-summary-card {
+    transition: transform 0.2s;
+}
+
+.market-summary-card:hover {
+    transform: translateY(-3px);
+}
+
+.market-chart {
+    height: 50px;
+}
+
+.widget-header {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Stock price indicators */
+.price-up {
+    color: #26a69a !important;
+}
+
+.price-down {
+    color: #ef5350 !important;
+}
+
+/* Watchlist */
+.watchlist-table th, 
+.portfolio-table th,
+.orders-table th {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.symbol-cell {
+    font-weight: 600;
+}
+
+.company-name {
+    font-size: 0.875rem;
+    color: #888;
+}
+
+/* Charts */
+.chart-container {
+    height: 400px;
+    position: relative;
+}
+
+.volume-chart-container {
+    height: 150px;
+    position: relative;
+}
+
+.period-selector .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Search results */
+#search-results {
+    position: absolute;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    border-radius: 0 0 4px 4px;
+}
+
+#search-results a:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Portfolio chart */
+.portfolio-chart-container {
+    height: 250px;
+    position: relative;
+}
+
+/* Animation effects */
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+/* Order form */
+.order-section {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1.5rem;
+}
+
+.order-type-btn {
+    width: 100px;
+}
+
+/* Order status labels */
+.status-completed {
+    background-color: #4caf50;
+}
+
+.status-pending {
+    background-color: #ff9800;
+}
+
+.status-cancelled {
+    background-color: #f44336;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 300px;
+    }
+    
+    .volume-chart-container {
+        height: 100px;
+    }
+    
+    .hide-on-mobile {
+        display: none;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* Login/Register Forms */
+.auth-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.auth-logo {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* Loading indicator */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    border-radius: 4px;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}

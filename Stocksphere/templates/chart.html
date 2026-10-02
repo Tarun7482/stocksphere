@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ symbol }} Chart - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 id="stock-symbol">{{ symbol }}</h2>
+            <h3 class="{% if stock_info.change > 0 %}price-up{% elif stock_info.change < 0 %}price-down{% endif %}">
+                ${{ stock_info.price|round(2) }} 
+                <small class="ms-2">
+                    {% if stock_info.change > 0 %}+{% endif %}{{ stock_info.change|round(2) }} ({{ stock_info.change_percent|round(2) }}%)
+                </small>
+            </h3>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Price Chart</h5>
+                <div class="btn-group period-selector">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-period="1d">1D</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-period="5d">1W</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary active" data-period="1mo">1M</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-period="3mo">3M</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-period="1y">1Y</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-period="5y">5Y</button>
+                </div>
+            </div>
+            <div class="card-body p-2 position-relative">
+                <div id="chart-loading" class="loading-overlay d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="stock-chart"></canvas>
+                </div>
+                <div class="volume-chart-container mt-2">
+                    <canvas id="volume-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Trade</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button id="buy-button" class="btn btn-success order-type-btn" data-bs-toggle="modal" data-bs-target="#orderModal" data-order-type="BUY" data-symbol="{{ symbol }}" data-price="{{ stock_info.price }}">
+                        BUY
+                    </button>
+                    <button id="sell-button" class="btn btn-danger order-type-btn" data-bs-toggle="modal" data-bs-target="#orderModal" data-order-type="SELL" data-symbol="{{ symbol }}" data-price="{{ stock_info.price }}">
+                        SELL
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <h6 class="widget-header">Market Data</h6>
+                <div class="row g-3 mt-1">
+                    <div class="col-6">
+                        <div class="small text-muted">Open</div>
+                        <div>${{ stock_info.open|round(2) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Prev. Close</div>
+                        <div>${{ stock_info.prev_close|round(2) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Day High</div>
+                        <div>${{ stock_info.day_high|round(2) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Day Low</div>
+                        <div>${{ stock_info.day_low|round(2) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Volume</div>
+                        <div>{{ "{:,}".format(stock_info.volume) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Market Cap</div>
+                        <div>{{ "${:,.2f}B".format(stock_info.market_cap / 1000000000) if stock_info.market_cap else 'N/A' }}</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="addToWatchlist('{{ watchlists[0].id if watchlists else '' }}', '{{ symbol }}')">
+                        <i class="fas fa-plus me-1"></i> Add to Watchlist
+                    </button>
+                    <a href="#" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-info-circle me-1"></i> Company Info
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Store historical data for chart.js -->
+<script id="historical-data" type="application/json">
+    {{ historical_data|tojson }}
+</script>
+
+<!-- Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="orderModalLabel">Place Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="order-messages"></div>
+                <div id="order-form-container">
+                    <h4 id="order-title" class="mb-3">Buy</h4>
+                    <form id="order-form">
+                        <input type="hidden" id="order-type" value="BUY">
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="symbol" value="{{ symbol }}" readonly>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" min="1" value="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price</label>
+                                <input type="number" class="form-control" id="price" step="0.01" value="{{ stock_info.price }}" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total Value</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <div class="form-control" id="total-value">{{ (stock_info.price|float * 1)|round(2) }}</div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Place Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+    function addToWatchlist(watchlistId, symbol) {
+        fetch('/api/watchlist/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                watchlist_id: watchlistId,
+                symbol: symbol
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success alert
+                const alertsContainer = document.getElementById('alerts-container');
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                alertsContainer.appendChild(alert);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 300);
+                }, 3000);
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error adding to watchlist:', error);
+            alert('An error occurred while adding to watchlist');
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Market Dashboard</h2>
+    </div>
+</div>
+
+<!-- Market Summary -->
+<div class="row mb-4">
+    {% for index in market_summary %}
+    <div class="col-md-3 mb-3">
+        <div class="card market-summary-card">
+            <div class="card-body p-3">
+                <h6 class="card-title d-flex justify-content-between align-items-center">
+                    <span>{{ index.name }}</span>
+                    <span class="{% if index.change > 0 %}price-up{% elif index.change < 0 %}price-down{% endif %}">
+                        {{ index.price|round(2) }}
+                    </span>
+                </h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="{% if index.change > 0 %}price-up{% elif index.change < 0 %}price-down{% endif %}">
+                        {% if index.change > 0 %}+{% endif %}{{ index.change|round(2) }} ({{ index.change_percent|round(2) }}%)
+                    </span>
+                    <canvas class="market-chart" data-symbol="{{ index.symbol }}" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row">
+    <!-- Portfolio Summary -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Portfolio Summary</h5>
+                <a href="{{ url_for('portfolio') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <h6 class="widget-header">Portfolio Value</h6>
+                        <h3 class="mb-0">${{ portfolio_value|round(2) }}</h3>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="widget-header">Available Funds</h6>
+                        <h3 class="mb-0">${{ available_funds|round(2) }}</h3>
+                    </div>
+                </div>
+                
+                {% if portfolio_value > 0 %}
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-primary">View Portfolio</a>
+                </div>
+                {% else %}
+                <div class="text-center mt-4">
+                    <p class="text-muted">You don't have any stocks in your portfolio yet.</p>
+                    <a href="{{ url_for('watchlist') }}" class="btn btn-primary">Start Trading</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Watchlist -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Watchlist</h5>
+                <a href="{{ url_for('watchlist') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if default_watchlist and default_watchlist.stocks %}
+                <div class="table-responsive">
+                    <table class="table table-hover watchlist-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Change</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in default_watchlist.stocks[:5] %}
+                            {% set stock_info = get_stock_data(item.symbol) %}
+                            <tr>
+                                <td>
+                                    <div class="symbol-cell">{{ item.symbol }}</div>
+                                    <div class="company-name">{{ stock_info.name }}</div>
+                                </td>
+                                <td>{{ stock_info.price|round(2) }}</td>
+                                <td class="{% if stock_info.change > 0 %}price-up{% elif stock_info.change < 0 %}price-down{% endif %}">
+                                    {% if stock_info.change > 0 %}+{% endif %}{{ stock_info.change|round(2) }} ({{ stock_info.change_percent|round(2) }}%)
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('chart', symbol=item.symbol) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center mt-4">
+                    <p class="text-muted">You don't have any stocks in your watchlist yet.</p>
+                    <a href="{{ url_for('watchlist') }}" class="btn btn-primary">Add Stocks</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Gainers & Losers -->
+<div class="row">
+    <div class="col-12 mb-3">
+        <h4>Market Movers</h4>
+    </div>
+    
+    <!-- Gainers -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0 text-success">Top Gainers</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Change %</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in get_top_gainers_losers().gainers %}
+                            <tr>
+                                <td>
+                                    <div class="symbol-cell">{{ stock.symbol }}</div>
+                                    <div class="company-name">{{ stock.name }}</div>
+                                </td>
+                                <td>{{ stock.price|round(2) }}</td>
+                                <td class="price-up">+{{ stock.change_percent|round(2) }}%</td>
+                                <td>
+                                    <a href="{{ url_for('chart', symbol=stock.symbol) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Losers -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0 text-danger">Top Losers</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Change %</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in get_top_gainers_losers().losers %}
+                            <tr>
+                                <td>
+                                    <div class="symbol-cell">{{ stock.symbol }}</div>
+                                    <div class="company-name">{{ stock.name }}</div>
+                                </td>
+                                <td>{{ stock.price|round(2) }}</td>
+                                <td class="price-down">{{ stock.change_percent|round(2) }}%</td>
+                                <td>
+                                    <a href="{{ url_for('chart', symbol=stock.symbol) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

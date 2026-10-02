@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Watchlist - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Watchlist</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <input type="text" class="form-control" id="watchlist-search" placeholder="Search in watchlist...">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
+            <i class="fas fa-plus me-1"></i> Add Stock
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            {{ active_watchlist.name }} <span class="badge bg-secondary ms-2">{{ active_watchlist.stocks|length }}</span>
+        </h5>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="watchlistDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                Change Watchlist
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="watchlistDropdown">
+                {% for watchlist in watchlists %}
+                <li><a class="dropdown-item {% if watchlist.id == active_watchlist.id %}active{% endif %}" href="#">{{ watchlist.name }}</a></li>
+                {% endfor %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#createWatchlistModal">
+                    <i class="fas fa-plus me-1"></i> Create New
+                </a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if stocks_data %}
+        <div class="table-responsive">
+            <table class="table table-hover watchlist-table" id="watchlist-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>LTP</th>
+                        <th>Change</th>
+                        <th class="hide-on-mobile">Day Range</th>
+                        <th class="hide-on-mobile">Volume</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks_data %}
+                    <tr data-symbol="{{ stock.symbol }}">
+                        <td>
+                            <div class="symbol-cell">{{ stock.symbol }}</div>
+                            <div class="company-name">{{ stock.name }}</div>
+                        </td>
+                        <td>{{ stock.price|round(2) }}</td>
+                        <td class="{% if stock.change > 0 %}price-up{% elif stock.change < 0 %}price-down{% endif %}">
+                            {% if stock.change > 0 %}+{% endif %}{{ stock.change|round(2) }} ({{ stock.change_percent|round(2) }}%)
+                        </td>
+                        <td class="hide-on-mobile">{{ stock.day_low|round(2) }} - {{ stock.day_high|round(2) }}</td>
+                        <td class="hide-on-mobile">{{ "{:,}".format(stock.volume) }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('chart', symbol=stock.symbol) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View Chart">
+                                    <i class="fas fa-chart-line"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#orderModal" data-symbol="{{ stock.symbol }}" data-price="{{ stock.price }}" data-order-type="BUY" data-bs-toggle="tooltip" title="Buy">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-from-watchlist" data-watchlist-id="{{ active_watchlist.id }}" data-symbol="{{ stock.symbol }}" data-bs-toggle="tooltip" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center p-4">
+            <p class="text-muted">No stocks in this watchlist</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                <i class="fas fa-plus me-1"></i> Add Stock
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStockModalLabel">Add Stock to Watchlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-to-watchlist-form">
+                    <input type="hidden" id="watchlist-id" value="{{ active_watchlist.id|string }}">
+                    <div class="mb-3">
+                        <label for="stock-symbol" class="form-label">Stock Symbol</label>
+                        <input type="text" class="form-control" id="stock-symbol" placeholder="e.g. AAPL, MSFT, GOOGL" required>
+                        <div class="form-text">Enter the stock symbol you want to add</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Watchlist Modal -->
+<div class="modal fade" id="createWatchlistModal" tabindex="-1" aria-labelledby="createWatchlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createWatchlistModalLabel">Create New Watchlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-watchlist-form">
+                    <div class="mb-3">
+                        <label for="watchlist-name" class="form-label">Watchlist Name</label>
+                        <input type="text" class="form-control" id="watchlist-name" placeholder="e.g. Tech Stocks, Blue Chips" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Create Watchlist</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="orderModalLabel">Place Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="order-messages"></div>
+                <div id="order-form-container">
+                    <h4 id="order-title" class="mb-3">Buy</h4>
+                    <form id="order-form">
+                        <input type="hidden" id="order-type" value="BUY">
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="symbol" readonly>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" min="1" value="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price</label>
+                                <input type="number" class="form-control" id="price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total Value</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <div class="form-control" id="total-value">0.00</div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Place Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/watchlist.js') }}"></script>
+<script>
+    // Populate the order modal with stock data
+    document.addEventListener('DOMContentLoaded', function() {
+        const orderModal = document.getElementById('orderModal');
+        orderModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const symbol = button.getAttribute('data-symbol');
+            const price = button.getAttribute('data-price');
+            const orderType = button.getAttribute('data-order-type');
+            
+            document.getElementById('symbol').value = symbol;
+            document.getElementById('price').value = price;
+            document.getElementById('order-type').value = orderType;
+            
+            // Update total value
+            const quantity = document.getElementById('quantity').value;
+            document.getElementById('total-value').textContent = (quantity * price).toFixed(2);
+            
+            // Clear previous messages
+            document.getElementById('order-messages').innerHTML = '';
+        });
+    });
+</script>
+{% endblock %}

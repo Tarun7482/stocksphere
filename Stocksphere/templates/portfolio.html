@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Portfolio</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Portfolio Summary Card -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Portfolio Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="portfolio-chart-container mb-3">
+                            <canvas id="portfolio-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stats-container p-3">
+                            <div class="mb-3">
+                                <h6 class="widget-header">Total Value</h6>
+                                <h3 class="mb-0">₹{{ total_value|round(2) }}</h3>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="widget-header">Overall P&L</h6>
+                                <h4 class="{% if overall_profit_loss > 0 %}price-up{% elif overall_profit_loss < 0 %}price-down{% endif %}">
+                                    {% if overall_profit_loss > 0 %}+{% endif %}₹{{ overall_profit_loss|round(2) }} 
+                                    <small>({{ overall_profit_loss_percentage|round(2) }}%)</small>
+                                </h4>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="widget-header">Available Funds</h6>
+                                <h4>₹{{ available_funds|round(2) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Card -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('watchlist') }}" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart me-2"></i> Buy Stocks
+                    </a>
+                    <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-history me-2"></i> Order History
+                    </a>
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="fas fa-file-export me-2"></i> Export Portfolio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Portfolio Holdings -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Holdings</h5>
+        <div class="input-group" style="width: 250px;">
+            <input type="text" class="form-control form-control-sm" id="portfolio-search" placeholder="Search holdings...">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if portfolio_data %}
+        <div class="table-responsive">
+            <table class="table table-hover portfolio-table" id="portfolio-table">
+                <thead>
+                    <tr>
+                        <th>Stock</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Avg. Price</th>
+                        <th class="text-end">LTP</th>
+                        <th class="text-end">Current Value</th>
+                        <th class="text-end">P&L</th>
+                        <th class="text-end">P&L %</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in portfolio_data %}
+                    <tr data-symbol="{{ item.symbol }}">
+                        <td>
+                            <div class="symbol-cell">{{ item.symbol }}</div>
+                            <div class="company-name">{{ item.company_name }}</div>
+                        </td>
+                        <td class="text-end">{{ item.quantity }}</td>
+                        <td class="text-end">₹{{ item.average_price|round(2) }}</td>
+                        <td class="text-end">₹{{ item.current_price|round(2) }}</td>
+                        <td class="text-end current-value" data-value="{{ item.current_value }}">₹{{ item.current_value|round(2) }}</td>
+                        <td class="text-end {% if item.profit_loss > 0 %}price-up{% elif item.profit_loss < 0 %}price-down{% endif %}">
+                            {% if item.profit_loss > 0 %}+{% endif %}₹{{ item.profit_loss|round(2) }}
+                        </td>
+                        <td class="text-end {% if item.profit_loss_percentage > 0 %}price-up{% elif item.profit_loss_percentage < 0 %}price-down{% endif %}">
+                            {% if item.profit_loss_percentage > 0 %}+{% endif %}{{ item.profit_loss_percentage|round(2) }}%
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('chart', symbol=item.symbol) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View Chart">
+                                    <i class="fas fa-chart-line"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#orderModal" data-symbol="{{ item.symbol }}" data-price="{{ item.current_price }}" data-order-type="SELL" data-bs-toggle="tooltip" title="Sell">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center p-5">
+            <p class="text-muted mb-3">You don't have any stocks in your portfolio.</p>
+            <a href="{{ url_for('watchlist') }}" class="btn btn-primary">
+                <i class="fas fa-shopping-cart me-2"></i> Start Investing
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="orderModalLabel">Place Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="order-messages"></div>
+                <div id="order-form-container">
+                    <h4 id="order-title" class="mb-3">Sell</h4>
+                    <form id="order-form">
+                        <input type="hidden" id="order-type" value="SELL">
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="symbol" readonly>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" min="1" value="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price</label>
+                                <input type="number" class="form-control" id="price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total Value</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <div class="form-control" id="total-value">0.00</div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">Place Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/portfolio.js') }}"></script>
+<script>
+    // Populate the order modal with stock data
+    document.addEventListener('DOMContentLoaded', function() {
+        const orderModal = document.getElementById('orderModal');
+        orderModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const symbol = button.getAttribute('data-symbol');
+            const price = button.getAttribute('data-price');
+            const orderType = button.getAttribute('data-order-type');
+            
+            document.getElementById('symbol').value = symbol;
+            document.getElementById('price').value = price;
+            document.getElementById('order-type').value = orderType;
+            
+            // Update total value
+            const quantity = document.getElementById('quantity').value;
+            document.getElementById('total-value').textContent = (quantity * price).toFixed(2);
+            
+            // Clear previous messages
+            document.getElementById('order-messages').innerHTML = '';
+        });
+    });
+</script>
+{% endblock %}

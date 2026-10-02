@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - StockSphere{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-robot me-2"></i>StockSphere AI Assistant</h5>
+                <span class="badge bg-primary">AI Powered</span>
+            </div>
+            <div class="card-body">
+                <!-- Chat Messages Container -->
+                <div id="chat-messages" class="mb-4 overflow-auto" style="height: 400px;">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% if message.is_user %}
+                            <!-- User Message -->
+                            <div class="d-flex mb-3 justify-content-end">
+                                <div class="flex-grow-1 me-3 text-end">
+                                    <div class="bg-primary text-white p-3 rounded">
+                                        <p class="mb-0">{{ message.content }}</p>
+                                    </div>
+                                    <small class="text-muted">You</small>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <!-- AI Message -->
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="bg-light text-dark p-3 rounded">
+                                        <p class="mb-0">{{ message.content }}</p>
+                                    </div>
+                                    <small class="text-muted">AI Assistant</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <!-- Welcome message - only shown when no messages exist -->
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="bg-light text-dark p-3 rounded">
+                                    <p class="mb-0">Hello! I'm your StockSphere AI Assistant. I can help you analyze your portfolio, provide insights about stocks, and answer trading-related questions. How can I assist you today?</p>
+                                </div>
+                                <small class="text-muted">AI Assistant</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- User Input -->
+                <form id="chat-form" method="post" action="{{ url_for('chatbot_message') }}">
+                    <div class="input-group">
+                        <input type="text" id="user-message" name="message" class="form-control" placeholder="Type your message..." required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Console Logging for Debug -->
+                <script>
+                    document.getElementById('chat-form').addEventListener('submit', function(e) {
+                        const message = document.getElementById('user-message').value;
+                        console.log('Submitting message:', message);
+                        console.log('Form action:', this.action);
+                        console.log('Form method:', this.method);
+                    });
+                </script>
+
+                <!-- Reset Chat Button -->
+                <form method="post" action="{{ url_for('reset_chatbot') }}" class="mt-2 text-end">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-trash-alt me-1"></i> Reset Chat
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Portfolio Snapshot -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-briefcase me-2"></i>Your Portfolio Snapshot</h5>
+            </div>
+            <div class="card-body">
+                {% if portfolio %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Avg. Price</th>
+                                    <th>Current Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in portfolio %}
+                                    <tr>
+                                        <td class="symbol-cell">{{ item.symbol }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>${{ item.average_price|round(2) }}</td>
+                                        <td>${{ (item.quantity * item.current_price)|round(2) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You don't have any stocks in your portfolio yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sample Questions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-question-circle me-2"></i>Sample Questions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><a href="#" class="sample-question">Analyze my portfolio performance</a></li>
+                            <li class="list-group-item"><a href="#" class="sample-question">What stocks should I research?</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><a href="#" class="sample-question">How can I diversify my portfolio?</a></li>
+                            <li class="list-group-item"><a href="#" class="sample-question">Explain dollar-cost averaging</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Scroll chat to bottom
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Sample question functionality
+    document.querySelectorAll('.sample-question').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const question = this.textContent;
+            document.getElementById('user-message').value = question;
+            handleChatSubmit();
+        });
+    });
+    
+    // Override form submission with AJAX
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent traditional form submission
+        handleChatSubmit();
+    });
+    
+    function handleChatSubmit() {
+        const messageInput = document.getElementById('user-message');
+        const userMessage = messageInput.value;
+        
+        if (!userMessage.trim()) {
+            return;
+        }
+        
+        // Disable input while processing
+        messageInput.disabled = true;
+        
+        // Create user message bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'd-flex mb-3 justify-content-end';
+        userBubble.innerHTML = `
+            <div class="flex-grow-1 me-3 text-end">
+                <div class="bg-primary text-white p-3 rounded">
+                    <p class="mb-0">${userMessage}</p>
+                </div>
+                <small class="text-muted">You</small>
+            </div>
+            <div class="flex-shrink-0">
+                <div class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        `;
+        
+        // Add to chat
+        chatMessages.appendChild(userBubble);
+        
+        // Create loading message
+        const loadingBubble = document.createElement('div');
+        loadingBubble.className = 'd-flex mb-3';
+        loadingBubble.id = 'loading-message';
+        loadingBubble.innerHTML = `
+            <div class="flex-shrink-0">
+                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fas fa-robot"></i>
+                </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+                <div class="bg-light text-dark p-3 rounded">
+                    <p class="mb-0">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Thinking...
+                    </p>
+                </div>
+                <small class="text-muted">AI Assistant</small>
+            </div>
+        `;
+        
+        // Add loading message to chat
+        chatMessages.appendChild(loadingBubble);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Send request to server via AJAX
+        fetch('{{ url_for('chatbot_message') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'message': userMessage
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Network response was not ok');
+        })
+        .then(data => {
+            // Remove the loading message
+            document.getElementById('loading-message').remove();
+            
+            // Add the AI response
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'd-flex mb-3';
+            aiBubble.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="bg-light text-dark p-3 rounded">
+                        <p class="mb-0">${data.response}</p>
+                    </div>
+                    <small class="text-muted">AI Assistant</small>
+                </div>
+            `;
+            
+            // Add to chat
+            chatMessages.appendChild(aiBubble);
+            
+            // Clear and re-enable input
+            messageInput.value = '';
+            messageInput.disabled = false;
+            messageInput.focus();
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Remove the loading message
+            document.getElementById('loading-message').remove();
+            
+            // Add error message
+            const errorBubble = document.createElement('div');
+            errorBubble.className = 'd-flex mb-3';
+            errorBubble.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="avatar bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="bg-light text-danger p-3 rounded">
+                        <p class="mb-0">Sorry, there was an error processing your request. Please try again.</p>
+                    </div>
+                    <small class="text-muted">Error</small>
+                </div>
+            `;
+            
+            // Add to chat
+            chatMessages.appendChild(errorBubble);
+            
+            // Re-enable input
+            messageInput.disabled = false;
+            messageInput.focus();
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    }
+});
+</script>
+{% endblock %}
